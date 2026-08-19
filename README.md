@@ -16,12 +16,25 @@ for the implementation plan.
 
 ## Running it
 
-### Prerequisites
+### Docker (easiest)
+
+```bash
+cp backend/.env.example backend/.env  # fill in ANTHROPIC_API_KEY
+docker compose up --build
+```
+
+Open `http://localhost:5173` — same ports and CORS setup as local dev, just
+containerized, so the browser talks to the frontend and backend directly on
+their own ports.
+
+### Manual setup
+
+#### Prerequisites
 
 Python 3.11+ and Node.js 20+. The frontend pins `vite@6` / `@vitejs/plugin-react@4`
 for compatibility down to Node 18/20/22 (verified working on Node 22.8).
 
-### Backend
+#### Backend
 
 ```bash
 cd backend
@@ -32,7 +45,7 @@ cp .env.example .env  # fill in ANTHROPIC_API_KEY
 uvicorn app.main:app --reload --port 8000
 ```
 
-### Frontend
+#### Frontend
 
 ```bash
 cd frontend
