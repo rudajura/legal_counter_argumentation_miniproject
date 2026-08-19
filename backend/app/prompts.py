@@ -25,5 +25,11 @@ def build_phase1_user_prompt(fact_pattern: str, argument: str) -> str:
     return f"Skutkový stav: {fact_pattern}\n\nArgumentace: {argument}"
 
 
-def build_phase2_user_prompt(weaknesses: list[dict]) -> str:
-    return f"Slabiny: {json.dumps(weaknesses, ensure_ascii=False)}"
+def build_phase2_user_prompt(
+    weaknesses: list[dict], fact_pattern: str, argument: str
+) -> str:
+    return (
+        f"Skutkový stav: {fact_pattern}\n\n"
+        f"Argumentace protistrany: {argument}\n\n"
+        f"Slabiny: {json.dumps(weaknesses, ensure_ascii=False)}"
+    )

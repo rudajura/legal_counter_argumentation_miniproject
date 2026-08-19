@@ -6,6 +6,7 @@ from app.anthropic_client import (
     analyze_weaknesses,
     generate_counterarguments,
 )
+from app.schemas import AnalyzeResponse
 
 
 class FakeMessages:
@@ -35,8 +36,9 @@ def test_analyze_weaknesses_parses_json_array():
         {"weakness": "Late notice of defect", "description": "The defect was reported late."}
     ]
     assert client.messages.last_kwargs["system"] is not None
-    assert client.messages.last_kwargs["thinking"]["type"] == "enabled"
-    assert isinstance(client.messages.last_kwargs["thinking"]["budget_tokens"], int)
+    assert client.messages.last_kwargs["thinking"] == {"type": "adaptive"}
+    assert client.messages.last_kwargs["output_config"] == {"effort": "high"}
+    assert client.messages.last_kwargs["max_tokens"] == 16000
 
 
 def test_generate_counterarguments_parses_json_object():
@@ -54,9 +56,66 @@ def test_generate_counterarguments_parses_json_object():
         }
     )
     client = FakeClient(payload)
-    result = generate_counterarguments(client, [{"weakness": "X", "description": "..."}])
+    result = generate_counterarguments(
+        client,
+        [{"weakness": "X", "description": "..."}],
+        "the case facts",
+        "the original argument",
+    )
     assert result["summary"] == "The argument is moderately strong."
     assert result["items"][0]["strength"] == "medium"
+
+    sent_prompt = client.messages.last_kwargs["messages"][0]["content"]
+    assert "the case facts" in sent_prompt
+    assert "the original argument" in sent_prompt
+    assert '"weakness": "X"' in sent_prompt
+
+
+def test_generate_counterarguments_normalizes_strength_casing():
+    payload = json.dumps(
+        {
+            "summary": "s",
+            "items": [
+                {
+                    "weakness": "X",
+                    "counterargument": "Y",
+                    "strength": " High ",
+                    "reasoning": "Z",
+                }
+            ],
+        }
+    )
+    client = FakeClient(payload)
+    result = generate_counterarguments(client, [], "facts", "argument")
+    assert result["items"][0]["strength"] == "high"
+
+
+def test_generate_counterarguments_raw_output_validates_against_schema():
+    raw = """```json
+{
+  "summary": "Argumentace je středně silná.",
+  "items": [
+    {
+      "weakness": "Pozdní vytknutí vady",
+      "counterargument": "Vada byla vytknuta po uplynutí lhůty.",
+      "strength": "High",
+      "reasoning": "Ustálená judikatura NS k § 2112 OZ."
+    }
+  ]
+}
+```"""
+    client = FakeClient(raw)
+    result = generate_counterarguments(
+        client,
+        [{"weakness": "Pozdní vytknutí vady", "description": "..."}],
+        "Skutkový stav",
+        "Argumentace",
+    )
+    assert result["items"][0]["strength"] == "high"
+
+    validated = AnalyzeResponse(**result)
+    assert validated.items[0].strength == "high"
+    assert validated.summary == "Argumentace je středně silná."
 
 
 def test_extract_json_strips_markdown_fences():

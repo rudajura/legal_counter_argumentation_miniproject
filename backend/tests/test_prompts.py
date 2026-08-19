@@ -14,9 +14,17 @@ def test_build_phase1_user_prompt_includes_inputs():
 
 def test_build_phase2_user_prompt_serializes_weaknesses_as_json():
     weaknesses = [{"weakness": "A", "description": "B"}]
-    prompt = build_phase2_user_prompt(weaknesses)
+    prompt = build_phase2_user_prompt(weaknesses, "case facts", "my legal position")
     assert '"weakness": "A"' in prompt
     assert '"description": "B"' in prompt
+
+
+def test_build_phase2_user_prompt_includes_case_context():
+    prompt = build_phase2_user_prompt(
+        [{"weakness": "A", "description": "B"}], "case facts", "my legal position"
+    )
+    assert "case facts" in prompt
+    assert "my legal position" in prompt
 
 
 def test_phase1_system_requests_json_array():

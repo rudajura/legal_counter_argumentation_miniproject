@@ -8,15 +8,14 @@ from app.prompts import (
     build_phase2_user_prompt,
 )
 
-MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-opus-5")
-THINKING_BUDGET = int(os.environ.get("ANTHROPIC_THINKING_BUDGET", "4000"))
-
 
 def _call_claude(client, system: str, user: str) -> str:
+    model = os.environ.get("ANTHROPIC_MODEL", "claude-opus-5")
     response = client.messages.create(
-        model=MODEL,
-        max_tokens=THINKING_BUDGET + 2000,
-        thinking={"type": "enabled", "budget_tokens": THINKING_BUDGET},
+        model=model,
+        max_tokens=16000,
+        thinking={"type": "adaptive"},
+        output_config={"effort": "high"},
         system=system,
         messages=[{"role": "user", "content": user}],
     )
@@ -41,6 +40,16 @@ def analyze_weaknesses(client, fact_pattern: str, argument: str) -> list[dict]:
     return _extract_json(raw)
 
 
-def generate_counterarguments(client, weaknesses: list[dict]) -> dict:
-    raw = _call_claude(client, PHASE2_SYSTEM, build_phase2_user_prompt(weaknesses))
-    return _extract_json(raw)
+def generate_counterarguments(
+    client, weaknesses: list[dict], fact_pattern: str, argument: str
+) -> dict:
+    raw = _call_claude(
+        client,
+        PHASE2_SYSTEM,
+        build_phase2_user_prompt(weaknesses, fact_pattern, argument),
+    )
+    result = _extract_json(raw)
+    for item in result.get("items", []):
+        if isinstance(item.get("strength"), str):
+            item["strength"] = item["strength"].strip().lower()
+    return result

@@ -8,8 +8,10 @@ def test_analyze_endpoint_returns_structured_result(monkeypatch):
         assert "case facts" in fact_pattern
         return [{"weakness": "Late notice", "description": "weakness description"}]
 
-    def fake_generate_counterarguments(client, weaknesses):
+    def fake_generate_counterarguments(client, weaknesses, fact_pattern, argument):
         assert weaknesses[0]["weakness"] == "Late notice"
+        assert "case facts" in fact_pattern
+        assert argument == "my argument"
         return {
             "summary": "summary text",
             "items": [
@@ -56,7 +58,8 @@ def test_analyze_endpoint_extracts_uploaded_pdf_text(monkeypatch, tmp_path):
         captured["fact_pattern"] = fact_pattern
         return [{"weakness": "W", "description": "D"}]
 
-    def fake_generate_counterarguments(client, weaknesses):
+    def fake_generate_counterarguments(client, weaknesses, fact_pattern, argument):
+        captured["phase2_fact_pattern"] = fact_pattern
         return {"summary": "s", "items": []}
 
     monkeypatch.setattr("app.main.analyze_weaknesses", fake_analyze_weaknesses)
@@ -75,3 +78,4 @@ def test_analyze_endpoint_extracts_uploaded_pdf_text(monkeypatch, tmp_path):
 
     assert response.status_code == 200
     assert "Sample attachment text" in captured["fact_pattern"]
+    assert "Sample attachment text" in captured["phase2_fact_pattern"]

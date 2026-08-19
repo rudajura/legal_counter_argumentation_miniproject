@@ -5,11 +5,11 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.anthropic_client import analyze_weaknesses, generate_counterarguments
-from app.pdf_extract import extract_text_from_pdf
-from app.schemas import AnalyzeResponse
-
 load_dotenv()
+
+from app.anthropic_client import analyze_weaknesses, generate_counterarguments  # noqa: E402
+from app.pdf_extract import extract_text_from_pdf  # noqa: E402
+from app.schemas import AnalyzeResponse  # noqa: E402
 
 app = FastAPI()
 app.add_middleware(
@@ -46,5 +46,7 @@ async def analyze(
 
     client = get_client()
     weaknesses = analyze_weaknesses(client, full_fact_pattern, argument)
-    result = generate_counterarguments(client, weaknesses)
+    result = generate_counterarguments(
+        client, weaknesses, full_fact_pattern, argument
+    )
     return result
