@@ -35,6 +35,8 @@ def test_analyze_weaknesses_parses_json_array():
         {"weakness": "Late notice of defect", "description": "The defect was reported late."}
     ]
     assert client.messages.last_kwargs["system"] is not None
+    assert client.messages.last_kwargs["thinking"]["type"] == "enabled"
+    assert isinstance(client.messages.last_kwargs["thinking"]["budget_tokens"], int)
 
 
 def test_generate_counterarguments_parses_json_object():
