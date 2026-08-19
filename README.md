@@ -16,6 +16,11 @@ for the implementation plan.
 
 ## Running it
 
+### Prerequisites
+
+Python 3.11+ and Node.js 20+. The frontend pins `vite@6` / `@vitejs/plugin-react@4`
+for compatibility down to Node 18/20/22 (verified working on Node 22.8).
+
 ### Backend
 
 ```bash
