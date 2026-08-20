@@ -37,17 +37,17 @@ export default function App() {
       setResult(response);
       setStatus("done");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      setError(err instanceof Error ? err.message : "Neznámá chyba");
       setStatus("error");
     }
   }
 
   return (
     <main className="app">
-      <h1>Argument Stress-Test</h1>
+      <h1>Zátěžový test argumentu</h1>
       <p className="subtitle">
-        Test your legal argument against the strongest counterarguments the
-        opposing side could raise.
+        Otestujte svůj právní argument proti nejsilnějším protiargumentům,
+        které by mohla vznést protistrana.
       </p>
       <ArgumentForm onSubmit={handleSubmit} disabled={status === "loading"} />
       {status === "loading" && <LoadingState phase={phase} />}

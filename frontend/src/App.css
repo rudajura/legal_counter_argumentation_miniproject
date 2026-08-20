@@ -75,6 +75,15 @@
   margin-top: 2rem;
 }
 
+.field-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #888;
+  margin: 0.5rem 0 0.15rem;
+}
+
 .summary {
   font-weight: 600;
   margin-bottom: 1rem;

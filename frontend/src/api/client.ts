@@ -20,7 +20,7 @@ export async function analyzeWeaknesses(
   });
 
   if (!response.ok) {
-    throw new Error(`Weakness analysis failed (HTTP ${response.status})`);
+    throw new Error(`Analýza slabin se nezdařila (HTTP ${response.status})`);
   }
 
   return response.json();
@@ -42,7 +42,7 @@ export async function generateCounterarguments(
   });
 
   if (!response.ok) {
-    throw new Error(`Counterargument generation failed (HTTP ${response.status})`);
+    throw new Error(`Generování protiargumentů se nezdařilo (HTTP ${response.status})`);
   }
 
   return response.json();

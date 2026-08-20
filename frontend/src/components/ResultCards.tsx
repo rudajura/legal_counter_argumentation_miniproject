@@ -7,14 +7,15 @@ const STRENGTH_COLOR: Record<Strength, string> = {
 };
 
 const STRENGTH_LABEL: Record<Strength, string> = {
-  low: "Low",
-  medium: "Medium",
-  high: "High",
+  low: "Nízká",
+  medium: "Střední",
+  high: "Vysoká",
 };
 
 export function ResultCards({ result }: { result: AnalyzeResponse }) {
   return (
     <div className="results">
+      <p className="field-label">Shrnutí</p>
       <p className="summary">{result.summary}</p>
       <div className="cards">
         {result.items.map((item, index) => (
@@ -23,14 +24,17 @@ export function ResultCards({ result }: { result: AnalyzeResponse }) {
             key={index}
             style={{ borderLeftColor: STRENGTH_COLOR[item.strength] }}
           >
+            <p className="field-label">Slabina</p>
             <h3>{item.weakness}</h3>
+            <p className="field-label">Protiargument</p>
             <p className="counterargument">{item.counterargument}</p>
             <span
               className="badge"
               style={{ backgroundColor: STRENGTH_COLOR[item.strength] }}
             >
-              Strength: {STRENGTH_LABEL[item.strength]}
+              Síla protiargumentu: {STRENGTH_LABEL[item.strength]}
             </span>
+            <p className="field-label">Odůvodnění</p>
             <p className="reasoning">{item.reasoning}</p>
           </div>
         ))}

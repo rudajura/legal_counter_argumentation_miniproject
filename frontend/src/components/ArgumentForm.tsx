@@ -31,13 +31,13 @@ export function ArgumentForm({ onSubmit, disabled }: ArgumentFormProps) {
             onClick={() => loadDemo(index)}
             disabled={disabled}
           >
-            Load demo: {demo.label}
+            Načíst ukázku: {demo.label}
           </button>
         ))}
       </div>
 
       <label>
-        Fact pattern
+        Skutkový stav
         <textarea
           value={factPattern}
           onChange={(event) => setFactPattern(event.target.value)}
@@ -48,7 +48,7 @@ export function ArgumentForm({ onSubmit, disabled }: ArgumentFormProps) {
       </label>
 
       <label>
-        My argument / position
+        Můj argument / stanovisko
         <textarea
           value={argument}
           onChange={(event) => setArgument(event.target.value)}
@@ -59,7 +59,7 @@ export function ArgumentForm({ onSubmit, disabled }: ArgumentFormProps) {
       </label>
 
       <label>
-        Attach PDF documents (optional)
+        Přiložit PDF dokumenty (nepovinné)
         <input
           type="file"
           accept="application/pdf"
@@ -70,7 +70,7 @@ export function ArgumentForm({ onSubmit, disabled }: ArgumentFormProps) {
       </label>
 
       <button type="submit" disabled={disabled}>
-        Test my argument
+        Otestovat můj argument
       </button>
     </form>
   );

@@ -6,7 +6,7 @@ export interface DemoExample {
 
 export const demoExamples: DemoExample[] = [
   {
-    label: "Defective Work Claim",
+    label: "Reklamace vadného díla",
     factPattern:
       "Objednatel si u dodavatele objednal rekonstrukci koupelny. Dílo bylo předáno 1. 3. 2024. " +
       "Objednatel zjistil netěsnost sprchového koutu dne 20. 8. 2024 a reklamoval ji dopisem ze dne " +
@@ -17,7 +17,7 @@ export const demoExamples: DemoExample[] = [
       "zjevná při předání díla a projevila se až po několika měsících užívání.",
   },
   {
-    label: "Wrongful Termination",
+    label: "Neplatná výpověď",
     factPattern:
       "Zaměstnanci byla dána výpověď pro nadbytečnost dle § 52 písm. c) zákoníku práce s odůvodněním " +
       "organizační změny. Zaměstnanec tvrdí, že na jeho místo byl do 14 dnů přijat nový pracovník na " +
