@@ -100,8 +100,8 @@ async def analyze_stream_endpoint(
         full_fact_pattern += "\n\nPřílohy:\n" + "\n\n".join(extracted_texts)
 
     async def event_generator():
-        client = get_client()
         try:
+            client = get_client()
             weaknesses = await asyncio.to_thread(
                 analyze_weaknesses, client, full_fact_pattern, argument
             )

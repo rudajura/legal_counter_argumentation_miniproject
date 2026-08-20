@@ -98,6 +98,10 @@ export async function streamAnalysis(
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
+  let terminalEventDispatched = false;
+  const markTerminal = () => {
+    terminalEventDispatched = true;
+  };
 
   while (true) {
     const { done, value } = await reader.read();
@@ -106,14 +110,22 @@ export async function streamAnalysis(
 
     let boundary = buffer.indexOf("\n\n");
     while (boundary !== -1) {
-      dispatchSseFrame(buffer.slice(0, boundary), callbacks);
+      dispatchSseFrame(buffer.slice(0, boundary), callbacks, markTerminal);
       buffer = buffer.slice(boundary + 2);
       boundary = buffer.indexOf("\n\n");
     }
   }
+
+  if (!terminalEventDispatched) {
+    throw new Error("Spojení bylo přerušeno dříve, než analýza skončila.");
+  }
 }
 
-function dispatchSseFrame(frame: string, callbacks: StreamAnalysisCallbacks): void {
+function dispatchSseFrame(
+  frame: string,
+  callbacks: StreamAnalysisCallbacks,
+  markTerminal: () => void,
+): void {
   const eventLine = frame.split("\n").find((line) => line.startsWith("event: "));
   const dataLine = frame.split("\n").find((line) => line.startsWith("data: "));
   if (!eventLine || !dataLine) return;
@@ -125,7 +137,9 @@ function dispatchSseFrame(frame: string, callbacks: StreamAnalysisCallbacks): vo
     callbacks.onWeaknesses(data as WeaknessesResponse);
   } else if (eventType === "result") {
     callbacks.onResult(data as AnalyzeResponse);
+    markTerminal();
   } else if (eventType === "error") {
     callbacks.onError((data as { message: string }).message);
+    markTerminal();
   }
 }
