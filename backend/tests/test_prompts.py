@@ -1,6 +1,14 @@
-from tools.prompts.counterargument import PHASE2_SYSTEM, build_phase2_user_prompt
+from tools.prompts.counterargument import (
+    PHASE2_JSON_SCHEMA,
+    PHASE2_SYSTEM,
+    build_phase2_user_prompt,
+)
 from tools.prompts.fact_extraction import EXTRACTION_SYSTEM, build_extraction_user_prompt
-from tools.prompts.weakness_analysis import PHASE1_SYSTEM, build_phase1_user_prompt
+from tools.prompts.weakness_analysis import (
+    PHASE1_JSON_SCHEMA,
+    PHASE1_SYSTEM,
+    build_phase1_user_prompt,
+)
 
 
 def test_build_phase1_user_prompt_includes_inputs():
@@ -40,3 +48,27 @@ def test_build_extraction_user_prompt_includes_document_text():
 
 def test_extraction_system_requests_facts_only():
     assert "skutkov" in EXTRACTION_SYSTEM.lower()
+
+
+def test_phase1_json_schema_is_strict_object_wrapping_weaknesses():
+    assert PHASE1_JSON_SCHEMA["type"] == "object"
+    assert PHASE1_JSON_SCHEMA["additionalProperties"] is False
+    assert PHASE1_JSON_SCHEMA["required"] == ["weaknesses"]
+    item_schema = PHASE1_JSON_SCHEMA["properties"]["weaknesses"]["items"]
+    assert set(item_schema["required"]) == {"weakness", "description"}
+    assert item_schema["additionalProperties"] is False
+
+
+def test_phase2_json_schema_is_strict_object_with_summary_and_items():
+    assert PHASE2_JSON_SCHEMA["type"] == "object"
+    assert PHASE2_JSON_SCHEMA["additionalProperties"] is False
+    assert set(PHASE2_JSON_SCHEMA["required"]) == {"summary", "items"}
+    item_schema = PHASE2_JSON_SCHEMA["properties"]["items"]["items"]
+    assert set(item_schema["required"]) == {
+        "weakness",
+        "counterargument",
+        "strength",
+        "reasoning",
+    }
+    assert item_schema["additionalProperties"] is False
+    assert item_schema["properties"]["strength"]["enum"] == ["low", "medium", "high"]

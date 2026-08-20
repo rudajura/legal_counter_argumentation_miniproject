@@ -9,3 +9,24 @@ Vrať výhradně JSON pole objektů v přesně tomto tvaru, bez dalšího textu:
 
 def build_phase1_user_prompt(fact_pattern: str, argument: str) -> str:
     return f"Skutkový stav: {fact_pattern}\n\nArgumentace: {argument}"
+
+
+PHASE1_JSON_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "weaknesses": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "weakness": {"type": "string"},
+                    "description": {"type": "string"},
+                },
+                "required": ["weakness", "description"],
+                "additionalProperties": False,
+            },
+        }
+    },
+    "required": ["weaknesses"],
+    "additionalProperties": False,
+}

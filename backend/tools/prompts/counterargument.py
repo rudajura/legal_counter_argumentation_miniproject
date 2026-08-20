@@ -21,3 +21,35 @@ def build_phase2_user_prompt(
         f"Argumentace protistrany: {argument}\n\n"
         f"Slabiny: {json.dumps(weaknesses, ensure_ascii=False)}"
     )
+
+
+PHASE2_JSON_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "summary": {"type": "string"},
+        "items": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "weakness": {"type": "string"},
+                    "counterargument": {"type": "string"},
+                    "strength": {
+                        "type": "string",
+                        "enum": ["low", "medium", "high"],
+                    },
+                    "reasoning": {"type": "string"},
+                },
+                "required": [
+                    "weakness",
+                    "counterargument",
+                    "strength",
+                    "reasoning",
+                ],
+                "additionalProperties": False,
+            },
+        },
+    },
+    "required": ["summary", "items"],
+    "additionalProperties": False,
+}
