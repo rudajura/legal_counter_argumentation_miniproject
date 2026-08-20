@@ -1,4 +1,4 @@
-# Analýza protiargumentů (Argument Stress-Test)
+# Analýza protiargumentů
 
 *[English version](README.md)*
 

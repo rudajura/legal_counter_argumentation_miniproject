@@ -1,4 +1,4 @@
-# Argument Stress-Test (Analýza protiargumentů)
+# Argument Stress-Test
 
 *[Česká verze](README.cs.md)*
 
