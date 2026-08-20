@@ -1,3 +1,6 @@
+import asyncio
+import json
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -171,3 +174,114 @@ def test_counterarguments_endpoint_returns_invalid_termination_fixture(
     assert response.status_code == 200
     body = response.json()
     assert body == fixture_response
+
+
+def _parse_sse_events(lines: list[str]) -> list[tuple[str, dict]]:
+    events = []
+    current_event = None
+    for line in lines:
+        if line.startswith("event: "):
+            current_event = line[len("event: "):]
+        elif line.startswith("data: "):
+            events.append((current_event, json.loads(line[len("data: "):])))
+    return events
+
+
+def test_stream_endpoint_emits_weaknesses_then_result(monkeypatch):
+    def fake_analyze_weaknesses(client, fact_pattern, argument):
+        assert "case facts" in fact_pattern
+        return [{"weakness": "Late notice", "description": "weakness description"}]
+
+    def fake_generate_counterarguments(client, weaknesses, fact_pattern, argument):
+        assert weaknesses[0]["weakness"] == "Late notice"
+        return {
+            "summary": "summary text",
+            "items": [
+                {
+                    "weakness": "Late notice",
+                    "counterargument": "counterargument text",
+                    "strength": "high",
+                    "reasoning": "reasoning text",
+                }
+            ],
+        }
+
+    monkeypatch.setattr("app.main.analyze_weaknesses", fake_analyze_weaknesses)
+    monkeypatch.setattr(
+        "app.main.generate_counterarguments", fake_generate_counterarguments
+    )
+    monkeypatch.setattr("app.main.get_client", lambda: object())
+
+    client = TestClient(app)
+    with client.stream(
+        "POST",
+        "/api/analyze/stream",
+        data={"fact_pattern": "case facts", "argument": "my argument"},
+    ) as response:
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith("text/event-stream")
+        events = _parse_sse_events(list(response.iter_lines()))
+
+    assert events[0][0] == "weaknesses"
+    assert events[0][1]["weaknesses"][0]["weakness"] == "Late notice"
+    assert events[0][1]["full_fact_pattern"] == "case facts"
+    assert events[1][0] == "result"
+    assert events[1][1]["summary"] == "summary text"
+    assert events[1][1]["items"][0]["strength"] == "high"
+
+
+def test_stream_endpoint_emits_error_event_when_phase_one_fails(monkeypatch):
+    def failing_analyze_weaknesses(client, fact_pattern, argument):
+        raise RuntimeError("model unavailable")
+
+    monkeypatch.setattr("app.main.analyze_weaknesses", failing_analyze_weaknesses)
+    monkeypatch.setattr("app.main.get_client", lambda: object())
+
+    client = TestClient(app)
+    with client.stream(
+        "POST",
+        "/api/analyze/stream",
+        data={"fact_pattern": "case facts", "argument": "my argument"},
+    ) as response:
+        assert response.status_code == 200
+        events = _parse_sse_events(list(response.iter_lines()))
+
+    assert events == [("error", {"message": "model unavailable", "phase": "weaknesses"})]
+
+
+def test_stream_endpoint_extracts_uploaded_pdf_text(monkeypatch, tmp_path):
+    from fpdf import FPDF
+
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Helvetica", size=12)
+    pdf.cell(0, 10, "Sample attachment text")
+    pdf_path = tmp_path / "attachment.pdf"
+    pdf_path.write_bytes(bytes(pdf.output()))
+
+    captured = {}
+
+    def fake_analyze_weaknesses(client, fact_pattern, argument):
+        captured["fact_pattern"] = fact_pattern
+        return [{"weakness": "W", "description": "D"}]
+
+    def fake_generate_counterarguments(client, weaknesses, fact_pattern, argument):
+        return {"summary": "s", "items": []}
+
+    monkeypatch.setattr("app.main.analyze_weaknesses", fake_analyze_weaknesses)
+    monkeypatch.setattr(
+        "app.main.generate_counterarguments", fake_generate_counterarguments
+    )
+    monkeypatch.setattr("app.main.get_client", lambda: object())
+
+    client = TestClient(app)
+    with open(pdf_path, "rb") as f:
+        with client.stream(
+            "POST",
+            "/api/analyze/stream",
+            data={"fact_pattern": "case facts", "argument": "my argument"},
+            files={"files": ("attachment.pdf", f, "application/pdf")},
+        ) as response:
+            list(response.iter_lines())
+
+    assert "Sample attachment text" in captured["fact_pattern"]
