@@ -76,7 +76,8 @@ def analyze_weaknesses(client, fact_pattern: str, argument: str) -> list[dict]:
         json_schema=PHASE1_JSON_SCHEMA,
         schema_name="weakness_list",
     )
-    return _extract_json(raw)["weaknesses"]
+    data = _extract_json(raw)
+    return data["weaknesses"] if isinstance(data, dict) else data
 
 
 def extract_fact_pattern(client, document_text: str) -> str:

@@ -53,6 +53,23 @@ def test_analyze_weaknesses_parses_json_array(monkeypatch):
     assert text_format["schema"] == PHASE1_JSON_SCHEMA
 
 
+def test_analyze_weaknesses_returns_bare_array_if_model_returns_array(monkeypatch):
+    monkeypatch.delenv("OPENAI_REASONING_EFFORT", raising=False)
+    payload = json.dumps(
+        [
+            {
+                "weakness": "Late notice of defect",
+                "description": "The defect was reported late.",
+            }
+        ]
+    )
+    client = FakeClient(payload)
+    result = analyze_weaknesses(client, "fact pattern", "argument")
+    assert result == [
+        {"weakness": "Late notice of defect", "description": "The defect was reported late."}
+    ]
+
+
 def test_generate_counterarguments_sends_json_schema_format():
     payload = json.dumps({"summary": "s", "items": []})
     client = FakeClient(payload)
