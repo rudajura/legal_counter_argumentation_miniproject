@@ -32,8 +32,9 @@ def test_build_phase2_user_prompt_includes_case_context():
     assert "my legal position" in prompt
 
 
-def test_phase1_system_requests_json_array():
-    assert "JSON pole" in PHASE1_SYSTEM
+def test_phase1_system_requests_json_object():
+    assert "JSON objekt" in PHASE1_SYSTEM
+    assert '"weaknesses"' in PHASE1_SYSTEM
 
 
 def test_phase2_system_requests_json_object_with_summary():

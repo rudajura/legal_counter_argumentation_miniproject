@@ -3,8 +3,8 @@ Dostaneš skutkový stav a argumentaci jedné strany. Tvým úkolem je identifik
 v této argumentaci — nepodložená tvrzení, sporné právní kvalifikace, chybějící důkazy, alternativní
 výklady právní normy. Nehodnoť, jestli má strana pravdu — jen hledej slabiny.
 
-Vrať výhradně JSON pole objektů v přesně tomto tvaru, bez dalšího textu:
-[{"weakness": "...", "description": "..."}]"""
+Vrať výhradně JSON objekt v přesně tomto tvaru, bez dalšího textu:
+{"weaknesses": [{"weakness": "...", "description": "..."}]}"""
 
 
 def build_phase1_user_prompt(fact_pattern: str, argument: str) -> str:
