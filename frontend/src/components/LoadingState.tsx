@@ -25,10 +25,14 @@ export function LoadingState({ phase }: { phase: LoadingPhase }) {
   const percent = Math.round((completedSteps / TOTAL_STEPS) * 100);
 
   return (
-    <div className="loading">
-      <p className="loading-label">
-        Krok {step} z {TOTAL_STEPS} · {label} ({elapsedSeconds} s)
-      </p>
+    <div className="loading" role="status">
+      <div className="loading-header">
+        <span className="loading-dot" aria-hidden="true" />
+        <p className="loading-label">
+          Krok {step} z {TOTAL_STEPS} · {label}
+        </p>
+        <span className="loading-time">{elapsedSeconds} s</span>
+      </div>
       <div
         className="progress-track"
         role="progressbar"

@@ -1,3 +1,65 @@
+:root {
+  --paper: #f1f2f0;
+  --paper-raised: #ffffff;
+  --ink: #1c2333;
+  --ink-soft: #4a5169;
+  --ink-faint: #8a90a3;
+  --line: #dadce2;
+  --case-blue: #3648c9;
+  --case-blue-dark: #2a37a0;
+  --case-blue-soft: #eaebfa;
+  --seal-green: #2f7a4f;
+  --seal-green-soft: #e7f1ea;
+  --seal-amber: #b8862b;
+  --seal-amber-soft: #fbf1de;
+  --seal-red: #a6293a;
+  --seal-red-soft: #f8e7e9;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --shadow-card:
+    0 1px 2px rgba(28, 35, 51, 0.04), 0 12px 28px -16px rgba(28, 35, 51, 0.22);
+
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", "SF Mono", Consolas, monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font: inherit;
+}
+
+::selection {
+  background: var(--case-blue-soft);
+  color: var(--case-blue-dark);
+}
+
+:focus-visible {
+  outline: 2px solid var(--case-blue);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -1,11 +1,5 @@
 import type { AnalyzeResponse, Strength } from "../types";
 
-const STRENGTH_COLOR: Record<Strength, string> = {
-  low: "#2e7d32",
-  medium: "#f9a825",
-  high: "#c62828",
-};
-
 const STRENGTH_LABEL: Record<Strength, string> = {
   low: "Nízká",
   medium: "Střední",
@@ -14,31 +8,32 @@ const STRENGTH_LABEL: Record<Strength, string> = {
 
 export function ResultCards({ result }: { result: AnalyzeResponse }) {
   return (
-    <div className="results">
-      <p className="field-label">Shrnutí</p>
+    <section className="results" aria-label="Výsledky analýzy">
+      <p className="field-heading">Shrnutí</p>
       <p className="summary">{result.summary}</p>
       <div className="cards">
         {result.items.map((item, index) => (
-          <div
-            className="card"
-            key={index}
-            style={{ borderLeftColor: STRENGTH_COLOR[item.strength] }}
-          >
-            <p className="field-label">Slabina</p>
-            <h3>{item.weakness}</h3>
-            <p className="field-label">Protiargument</p>
+          <article className="card" data-strength={item.strength} key={index}>
+            <p className="field-heading">Slabina</p>
+            <h3 className="card-title">{item.weakness}</h3>
+
+            <p className="field-heading">Protiargument</p>
             <p className="counterargument">{item.counterargument}</p>
-            <span
-              className="badge"
-              style={{ backgroundColor: STRENGTH_COLOR[item.strength] }}
-            >
-              Síla protiargumentu: {STRENGTH_LABEL[item.strength]}
-            </span>
-            <p className="field-label">Odůvodnění</p>
+
+            <div className="seal">
+              <span className="seal-ring">
+                <span className="visually-hidden">
+                  Síla protiargumentu:{" "}
+                </span>
+                {STRENGTH_LABEL[item.strength]}
+              </span>
+            </div>
+
+            <p className="field-heading">Odůvodnění</p>
             <p className="reasoning">{item.reasoning}</p>
-          </div>
+          </article>
         ))}
       </div>
-    </div>
+    </section>
   );
 }

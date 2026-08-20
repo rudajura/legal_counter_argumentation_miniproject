@@ -43,16 +43,34 @@ export default function App() {
   }
 
   return (
-    <main className="app">
-      <h1>Zátěžový test argumentu</h1>
-      <p className="subtitle">
-        Otestujte svůj právní argument proti nejsilnějším protiargumentům,
-        které by mohla vznést protistrana.
-      </p>
-      <ArgumentForm onSubmit={handleSubmit} disabled={status === "loading"} />
-      {status === "loading" && <LoadingState phase={phase} />}
-      {status === "error" && <p className="error">{error}</p>}
-      {status === "done" && result && <ResultCards result={result} />}
-    </main>
+    <div className="page">
+      <main className="app">
+        <header className="masthead">
+          <div className="seal-mark" aria-hidden="true">
+            §
+          </div>
+          <div>
+            <p className="eyebrow">Právní analýza · zátěžový test</p>
+            <h1>Zátěžový test argumentu</h1>
+            <p className="subtitle">
+              Otestujte svůj právní argument proti nejsilnějším
+              protiargumentům, které by mohla vznést protistrana.
+            </p>
+          </div>
+        </header>
+
+        <ArgumentForm
+          onSubmit={handleSubmit}
+          disabled={status === "loading"}
+        />
+        {status === "loading" && <LoadingState phase={phase} />}
+        {status === "error" && (
+          <p className="error" role="alert">
+            {error}
+          </p>
+        )}
+        {status === "done" && result && <ResultCards result={result} />}
+      </main>
+    </div>
   );
 }
