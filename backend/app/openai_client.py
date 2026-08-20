@@ -1,6 +1,7 @@
 import json
 import os
 
+from app.streaming_json import IncrementalArrayParser
 from tools.prompts.counterargument import (
     PHASE2_JSON_SCHEMA,
     PHASE2_SYSTEM,
@@ -14,13 +15,12 @@ from tools.prompts.weakness_analysis import (
 )
 
 
-def _call_openai(
-    client,
+def _build_openai_kwargs(
     system: str,
     user: str,
     json_schema: dict | None = None,
     schema_name: str = "response",
-) -> str:
+) -> dict:
     model = os.environ.get("OPENAI_MODEL", "gpt-5.5")
     effort = os.environ.get("OPENAI_REASONING_EFFORT", "high")
     kwargs = {
@@ -41,8 +41,48 @@ def _call_openai(
                 "strict": True,
             }
         }
+    return kwargs
+
+
+def _call_openai(
+    client,
+    system: str,
+    user: str,
+    json_schema: dict | None = None,
+    schema_name: str = "response",
+) -> str:
+    kwargs = _build_openai_kwargs(system, user, json_schema, schema_name)
     response = client.responses.create(**kwargs)
     return response.output_text
+
+
+async def _stream_openai_items(
+    client,
+    system: str,
+    user: str,
+    json_schema: dict,
+    schema_name: str,
+    array_key: str,
+):
+    """Streams an OpenAI structured-output call, yielding completed array items.
+
+    Yields ("item", dict) for each object in `array_key`'s array as soon as
+    it completes, then a final ("done", raw_text) with the full accumulated
+    response text once the stream ends.
+    """
+    kwargs = _build_openai_kwargs(system, user, json_schema, schema_name)
+    kwargs["stream"] = True
+    stream = await client.responses.create(**kwargs)
+
+    parser = IncrementalArrayParser(array_key)
+    buffer = ""
+    async for event in stream:
+        if getattr(event, "type", None) == "response.output_text.delta":
+            delta = event.delta
+            buffer += delta
+            for item in parser.feed(delta):
+                yield ("item", item)
+    yield ("done", buffer)
 
 
 def _call_openai_extraction(client, system: str, user: str) -> str:
@@ -102,3 +142,41 @@ def generate_counterarguments(
         if isinstance(item.get("strength"), str):
             item["strength"] = item["strength"].strip().lower()
     return result
+
+
+async def analyze_weaknesses_stream(client, fact_pattern: str, argument: str):
+    async for kind, payload in _stream_openai_items(
+        client,
+        PHASE1_SYSTEM,
+        build_phase1_user_prompt(fact_pattern, argument),
+        PHASE1_JSON_SCHEMA,
+        "weakness_list",
+        "weaknesses",
+    ):
+        if kind == "item":
+            yield ("item", payload)
+        else:
+            data = _extract_json(payload)
+            weaknesses = data["weaknesses"] if isinstance(data, dict) else data
+            yield ("done", weaknesses)
+
+
+async def generate_counterarguments_stream(
+    client, weaknesses: list[dict], fact_pattern: str, argument: str
+):
+    async for kind, payload in _stream_openai_items(
+        client,
+        PHASE2_SYSTEM,
+        build_phase2_user_prompt(weaknesses, fact_pattern, argument),
+        PHASE2_JSON_SCHEMA,
+        "counterargument_analysis",
+        "items",
+    ):
+        if kind == "item":
+            yield ("item", payload)
+        else:
+            result = _extract_json(payload)
+            for item in result.get("items", []):
+                if isinstance(item.get("strength"), str):
+                    item["strength"] = item["strength"].strip().lower()
+            yield ("done", result)

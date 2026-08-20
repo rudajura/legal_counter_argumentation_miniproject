@@ -2,14 +2,17 @@ import { useEffect, useState } from "react";
 
 export type LoadingPhase = "weaknesses" | "counterarguments";
 
-const TOTAL_STEPS = 2;
-
-const PHASE_INFO: Record<LoadingPhase, { step: number; label: string }> = {
-  weaknesses: { step: 1, label: "Analyzuji slabiny argumentu…" },
-  counterarguments: { step: 2, label: "Hledám protiargumenty…" },
+const PHASE_LABEL: Record<LoadingPhase, string> = {
+  weaknesses: "Analyzuji slabiny argumentu…",
+  counterarguments: "Hledám protiargumenty…",
 };
 
-export function LoadingState({ phase }: { phase: LoadingPhase }) {
+interface LoadingStateProps {
+  phase: LoadingPhase;
+  percent: number;
+}
+
+export function LoadingState({ phase, percent }: LoadingStateProps) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   useEffect(() => {
@@ -20,17 +23,11 @@ export function LoadingState({ phase }: { phase: LoadingPhase }) {
     return () => clearInterval(intervalId);
   }, []);
 
-  const { step, label } = PHASE_INFO[phase];
-  const completedSteps = step - 1;
-  const percent = Math.round((completedSteps / TOTAL_STEPS) * 100);
-
   return (
     <div className="loading" role="status">
       <div className="loading-header">
         <span className="loading-dot" aria-hidden="true" />
-        <p className="loading-label">
-          Krok {step} z {TOTAL_STEPS} · {label}
-        </p>
+        <p className="loading-label">{PHASE_LABEL[phase]}</p>
         <span className="loading-time">{elapsedSeconds} s</span>
       </div>
       <div

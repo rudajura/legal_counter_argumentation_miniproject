@@ -14,3 +14,5 @@ frontend/.env
 
 # SDD workspace
 .superpowers/
+
+.claude

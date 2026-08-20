@@ -10,7 +10,7 @@ Na závěr přidej celkové shrnutí (1-2 věty) hodnotící, jak silná je pův
 hlavní riziko.
 
 Vrať výhradně JSON objekt v přesně tomto tvaru, bez dalšího textu:
-{"summary": "...", "items": [{"weakness": "...", "counterargument": "...", "strength": "low|medium|high", "reasoning": "..."}]}"""
+{"items": [{"weakness": "...", "counterargument": "...", "strength": "low|medium|high", "reasoning": "..."}], "summary": "..."}"""
 
 
 def build_phase2_user_prompt(
@@ -26,7 +26,6 @@ def build_phase2_user_prompt(
 PHASE2_JSON_SCHEMA = {
     "type": "object",
     "properties": {
-        "summary": {"type": "string"},
         "items": {
             "type": "array",
             "items": {
@@ -49,6 +48,7 @@ PHASE2_JSON_SCHEMA = {
                 "additionalProperties": False,
             },
         },
+        "summary": {"type": "string"},
     },
     "required": ["summary", "items"],
     "additionalProperties": False,

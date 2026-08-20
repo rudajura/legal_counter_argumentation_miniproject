@@ -1,4 +1,9 @@
-import type { AnalyzeResponse, Weakness, WeaknessesResponse } from "../types";
+import type {
+  AnalyzeResponse,
+  CounterargumentItem,
+  Weakness,
+  WeaknessesResponse,
+} from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
@@ -68,7 +73,9 @@ export async function generateCounterarguments(
 }
 
 interface StreamAnalysisCallbacks {
+  onWeaknessItem: (weakness: Weakness) => void;
   onWeaknesses: (data: WeaknessesResponse) => void;
+  onCounterargumentItem: (item: CounterargumentItem) => void;
   onResult: (data: AnalyzeResponse) => void;
   onError: (message: string) => void;
 }
@@ -133,8 +140,12 @@ function dispatchSseFrame(
   const eventType = eventLine.slice("event: ".length);
   const data = JSON.parse(dataLine.slice("data: ".length));
 
-  if (eventType === "weaknesses") {
+  if (eventType === "weakness_item") {
+    callbacks.onWeaknessItem(data as Weakness);
+  } else if (eventType === "weaknesses") {
     callbacks.onWeaknesses(data as WeaknessesResponse);
+  } else if (eventType === "counterargument_item") {
+    callbacks.onCounterargumentItem(data as CounterargumentItem);
   } else if (eventType === "result") {
     callbacks.onResult(data as AnalyzeResponse);
     markTerminal();

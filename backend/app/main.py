@@ -1,18 +1,19 @@
-import asyncio
 import os
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from openai import OpenAI
+from openai import AsyncOpenAI, OpenAI
 
 load_dotenv()
 
 from app.openai_client import (  # noqa: E402
     analyze_weaknesses,
+    analyze_weaknesses_stream,
     extract_fact_pattern,
     generate_counterarguments,
+    generate_counterarguments_stream,
 )
 from app.pdf_extract import extract_text_from_pdf  # noqa: E402
 from app.schemas import (  # noqa: E402
@@ -39,6 +40,10 @@ def health():
 
 def get_client() -> OpenAI:
     return OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+
+
+def get_async_client() -> AsyncOpenAI:
+    return AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 
 @app.post("/api/analyze/weaknesses", response_model=WeaknessesResponse)
@@ -100,11 +105,16 @@ async def analyze_stream_endpoint(
         full_fact_pattern += "\n\nPřílohy:\n" + "\n\n".join(extracted_texts)
 
     async def event_generator():
+        client = get_async_client()
+        weaknesses: list[dict] = []
         try:
-            client = get_client()
-            weaknesses = await asyncio.to_thread(
-                analyze_weaknesses, client, full_fact_pattern, argument
-            )
+            async for kind, payload in analyze_weaknesses_stream(
+                client, full_fact_pattern, argument
+            ):
+                if kind == "item":
+                    yield format_sse_event("weakness_item", payload)
+                else:
+                    weaknesses = payload
         except Exception as exc:
             yield format_sse_event(
                 "error", {"message": str(exc), "phase": "weaknesses"}
@@ -116,14 +126,15 @@ async def analyze_stream_endpoint(
             {"weaknesses": weaknesses, "full_fact_pattern": full_fact_pattern},
         )
 
+        result: dict = {}
         try:
-            result = await asyncio.to_thread(
-                generate_counterarguments,
-                client,
-                weaknesses,
-                full_fact_pattern,
-                argument,
-            )
+            async for kind, payload in generate_counterarguments_stream(
+                client, weaknesses, full_fact_pattern, argument
+            ):
+                if kind == "item":
+                    yield format_sse_event("counterargument_item", payload)
+                else:
+                    result = payload
         except Exception as exc:
             yield format_sse_event(
                 "error", {"message": str(exc), "phase": "counterarguments"}

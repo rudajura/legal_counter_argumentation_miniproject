@@ -187,30 +187,34 @@ def _parse_sse_events(lines: list[str]) -> list[tuple[str, dict]]:
     return events
 
 
-def test_stream_endpoint_emits_weaknesses_then_result(monkeypatch):
-    def fake_analyze_weaknesses(client, fact_pattern, argument):
+def test_stream_endpoint_emits_item_events_then_weaknesses_then_result(monkeypatch):
+    async def fake_analyze_weaknesses_stream(client, fact_pattern, argument):
         assert "case facts" in fact_pattern
-        return [{"weakness": "Late notice", "description": "weakness description"}]
+        weakness = {"weakness": "Late notice", "description": "weakness description"}
+        yield ("item", weakness)
+        yield ("done", [weakness])
 
-    def fake_generate_counterarguments(client, weaknesses, fact_pattern, argument):
+    async def fake_generate_counterarguments_stream(
+        client, weaknesses, fact_pattern, argument
+    ):
         assert weaknesses[0]["weakness"] == "Late notice"
-        return {
-            "summary": "summary text",
-            "items": [
-                {
-                    "weakness": "Late notice",
-                    "counterargument": "counterargument text",
-                    "strength": "high",
-                    "reasoning": "reasoning text",
-                }
-            ],
+        item = {
+            "weakness": "Late notice",
+            "counterargument": "counterargument text",
+            "strength": "high",
+            "reasoning": "reasoning text",
         }
+        yield ("item", item)
+        yield ("done", {"summary": "summary text", "items": [item]})
 
-    monkeypatch.setattr("app.main.analyze_weaknesses", fake_analyze_weaknesses)
     monkeypatch.setattr(
-        "app.main.generate_counterarguments", fake_generate_counterarguments
+        "app.main.analyze_weaknesses_stream", fake_analyze_weaknesses_stream
     )
-    monkeypatch.setattr("app.main.get_client", lambda: object())
+    monkeypatch.setattr(
+        "app.main.generate_counterarguments_stream",
+        fake_generate_counterarguments_stream,
+    )
+    monkeypatch.setattr("app.main.get_async_client", lambda: object())
 
     client = TestClient(app)
     with client.stream(
@@ -222,20 +226,27 @@ def test_stream_endpoint_emits_weaknesses_then_result(monkeypatch):
         assert response.headers["content-type"].startswith("text/event-stream")
         events = _parse_sse_events(list(response.iter_lines()))
 
-    assert events[0][0] == "weaknesses"
-    assert events[0][1]["weaknesses"][0]["weakness"] == "Late notice"
-    assert events[0][1]["full_fact_pattern"] == "case facts"
-    assert events[1][0] == "result"
-    assert events[1][1]["summary"] == "summary text"
-    assert events[1][1]["items"][0]["strength"] == "high"
+    assert events[0][0] == "weakness_item"
+    assert events[0][1]["weakness"] == "Late notice"
+    assert events[1][0] == "weaknesses"
+    assert events[1][1]["weaknesses"][0]["weakness"] == "Late notice"
+    assert events[1][1]["full_fact_pattern"] == "case facts"
+    assert events[2][0] == "counterargument_item"
+    assert events[2][1]["weakness"] == "Late notice"
+    assert events[3][0] == "result"
+    assert events[3][1]["summary"] == "summary text"
+    assert events[3][1]["items"][0]["strength"] == "high"
 
 
 def test_stream_endpoint_emits_error_event_when_phase_one_fails(monkeypatch):
-    def failing_analyze_weaknesses(client, fact_pattern, argument):
+    async def failing_analyze_weaknesses_stream(client, fact_pattern, argument):
         raise RuntimeError("model unavailable")
+        yield  # pragma: no cover - unreachable, keeps this an async generator
 
-    monkeypatch.setattr("app.main.analyze_weaknesses", failing_analyze_weaknesses)
-    monkeypatch.setattr("app.main.get_client", lambda: object())
+    monkeypatch.setattr(
+        "app.main.analyze_weaknesses_stream", failing_analyze_weaknesses_stream
+    )
+    monkeypatch.setattr("app.main.get_async_client", lambda: object())
 
     client = TestClient(app)
     with client.stream(
@@ -247,6 +258,42 @@ def test_stream_endpoint_emits_error_event_when_phase_one_fails(monkeypatch):
         events = _parse_sse_events(list(response.iter_lines()))
 
     assert events == [("error", {"message": "model unavailable", "phase": "weaknesses"})]
+
+
+def test_stream_endpoint_emits_error_event_when_phase_two_fails(monkeypatch):
+    async def fake_analyze_weaknesses_stream(client, fact_pattern, argument):
+        weakness = {"weakness": "Late notice", "description": "weakness description"}
+        yield ("item", weakness)
+        yield ("done", [weakness])
+
+    async def failing_generate_counterarguments_stream(
+        client, weaknesses, fact_pattern, argument
+    ):
+        raise RuntimeError("model unavailable")
+        yield  # pragma: no cover - unreachable, keeps this an async generator
+
+    monkeypatch.setattr(
+        "app.main.analyze_weaknesses_stream", fake_analyze_weaknesses_stream
+    )
+    monkeypatch.setattr(
+        "app.main.generate_counterarguments_stream",
+        failing_generate_counterarguments_stream,
+    )
+    monkeypatch.setattr("app.main.get_async_client", lambda: object())
+
+    client = TestClient(app)
+    with client.stream(
+        "POST",
+        "/api/analyze/stream",
+        data={"fact_pattern": "case facts", "argument": "my argument"},
+    ) as response:
+        assert response.status_code == 200
+        events = _parse_sse_events(list(response.iter_lines()))
+
+    assert events[-1] == (
+        "error",
+        {"message": "model unavailable", "phase": "counterarguments"},
+    )
 
 
 def test_stream_endpoint_extracts_uploaded_pdf_text(monkeypatch, tmp_path):
@@ -261,18 +308,23 @@ def test_stream_endpoint_extracts_uploaded_pdf_text(monkeypatch, tmp_path):
 
     captured = {}
 
-    def fake_analyze_weaknesses(client, fact_pattern, argument):
+    async def fake_analyze_weaknesses_stream(client, fact_pattern, argument):
         captured["fact_pattern"] = fact_pattern
-        return [{"weakness": "W", "description": "D"}]
+        yield ("done", [{"weakness": "W", "description": "D"}])
 
-    def fake_generate_counterarguments(client, weaknesses, fact_pattern, argument):
-        return {"summary": "s", "items": []}
+    async def fake_generate_counterarguments_stream(
+        client, weaknesses, fact_pattern, argument
+    ):
+        yield ("done", {"summary": "s", "items": []})
 
-    monkeypatch.setattr("app.main.analyze_weaknesses", fake_analyze_weaknesses)
     monkeypatch.setattr(
-        "app.main.generate_counterarguments", fake_generate_counterarguments
+        "app.main.analyze_weaknesses_stream", fake_analyze_weaknesses_stream
     )
-    monkeypatch.setattr("app.main.get_client", lambda: object())
+    monkeypatch.setattr(
+        "app.main.generate_counterarguments_stream",
+        fake_generate_counterarguments_stream,
+    )
+    monkeypatch.setattr("app.main.get_async_client", lambda: object())
 
     client = TestClient(app)
     with open(pdf_path, "rb") as f:

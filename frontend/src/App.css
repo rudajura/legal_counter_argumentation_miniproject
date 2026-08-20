@@ -547,6 +547,12 @@ textarea:disabled {
   margin: 0;
 }
 
+.counterargument--pending,
+.reasoning--pending {
+  color: var(--ink-faint);
+  font-style: italic;
+}
+
 .seal {
   display: inline-flex;
   margin: 0.15rem 0 1.1rem;

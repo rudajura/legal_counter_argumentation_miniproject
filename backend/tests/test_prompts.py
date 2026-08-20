@@ -60,6 +60,13 @@ def test_phase1_json_schema_is_strict_object_wrapping_weaknesses():
     assert item_schema["additionalProperties"] is False
 
 
+def test_phase2_json_schema_lists_items_before_summary():
+    # Structured Outputs generate fields in schema-declared order; items must
+    # come first so counterarguments can stream progressively, with the
+    # summary (which needs all items) trailing last.
+    assert list(PHASE2_JSON_SCHEMA["properties"].keys()) == ["items", "summary"]
+
+
 def test_phase2_json_schema_is_strict_object_with_summary_and_items():
     assert PHASE2_JSON_SCHEMA["type"] == "object"
     assert PHASE2_JSON_SCHEMA["additionalProperties"] is False
