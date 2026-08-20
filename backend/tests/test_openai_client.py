@@ -8,6 +8,8 @@ from app.openai_client import (
     generate_counterarguments,
 )
 from app.schemas import AnalyzeResponse
+from tools.prompts.counterargument import PHASE2_JSON_SCHEMA
+from tools.prompts.weakness_analysis import PHASE1_JSON_SCHEMA
 
 
 class FakeResponses:
@@ -28,7 +30,14 @@ class FakeClient:
 def test_analyze_weaknesses_parses_json_array(monkeypatch):
     monkeypatch.delenv("OPENAI_REASONING_EFFORT", raising=False)
     payload = json.dumps(
-        [{"weakness": "Late notice of defect", "description": "The defect was reported late."}]
+        {
+            "weaknesses": [
+                {
+                    "weakness": "Late notice of defect",
+                    "description": "The defect was reported late.",
+                }
+            ]
+        }
     )
     client = FakeClient(payload)
     result = analyze_weaknesses(client, "fact pattern", "argument")
@@ -38,6 +47,20 @@ def test_analyze_weaknesses_parses_json_array(monkeypatch):
     assert client.responses.last_kwargs["input"][0]["role"] == "system"
     assert client.responses.last_kwargs["reasoning"] == {"effort": "high"}
     assert client.responses.last_kwargs["max_output_tokens"] == 16000
+    text_format = client.responses.last_kwargs["text"]["format"]
+    assert text_format["type"] == "json_schema"
+    assert text_format["strict"] is True
+    assert text_format["schema"] == PHASE1_JSON_SCHEMA
+
+
+def test_generate_counterarguments_sends_json_schema_format():
+    payload = json.dumps({"summary": "s", "items": []})
+    client = FakeClient(payload)
+    generate_counterarguments(client, [], "facts", "argument")
+    text_format = client.responses.last_kwargs["text"]["format"]
+    assert text_format["type"] == "json_schema"
+    assert text_format["strict"] is True
+    assert text_format["schema"] == PHASE2_JSON_SCHEMA
 
 
 def test_generate_counterarguments_parses_json_object():
