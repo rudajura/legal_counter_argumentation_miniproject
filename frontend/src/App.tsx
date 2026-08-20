@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ArgumentForm } from "./components/ArgumentForm";
 import { LoadingState, type LoadingPhase } from "./components/LoadingState";
 import { ResultCards } from "./components/ResultCards";
-import { analyzeWeaknesses, generateCounterarguments } from "./api/client";
+import { streamAnalysis } from "./api/client";
 import type { AnalyzeResponse } from "./types";
 import "./App.css";
 
@@ -23,19 +23,19 @@ export default function App() {
     setPhase("weaknesses");
     setError(null);
     try {
-      const { weaknesses, full_fact_pattern } = await analyzeWeaknesses(
-        factPattern,
-        argument,
-        files,
-      );
-      setPhase("counterarguments");
-      const response = await generateCounterarguments(
-        weaknesses,
-        full_fact_pattern,
-        argument,
-      );
-      setResult(response);
-      setStatus("done");
+      await streamAnalysis(factPattern, argument, files, {
+        onWeaknesses: () => {
+          setPhase("counterarguments");
+        },
+        onResult: (response) => {
+          setResult(response);
+          setStatus("done");
+        },
+        onError: (message) => {
+          setError(message);
+          setStatus("error");
+        },
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Neznámá chyba");
       setStatus("error");

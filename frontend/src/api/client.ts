@@ -66,3 +66,66 @@ export async function generateCounterarguments(
 
   return response.json();
 }
+
+interface StreamAnalysisCallbacks {
+  onWeaknesses: (data: WeaknessesResponse) => void;
+  onResult: (data: AnalyzeResponse) => void;
+  onError: (message: string) => void;
+}
+
+export async function streamAnalysis(
+  factPattern: string,
+  argument: string,
+  files: File[],
+  callbacks: StreamAnalysisCallbacks,
+): Promise<void> {
+  const formData = new FormData();
+  formData.append("fact_pattern", factPattern);
+  formData.append("argument", argument);
+  for (const file of files) {
+    formData.append("files", file);
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/analyze/stream`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok || !response.body) {
+    throw new Error(`Streamovaná analýza se nezdařila (HTTP ${response.status})`);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    let boundary = buffer.indexOf("\n\n");
+    while (boundary !== -1) {
+      dispatchSseFrame(buffer.slice(0, boundary), callbacks);
+      buffer = buffer.slice(boundary + 2);
+      boundary = buffer.indexOf("\n\n");
+    }
+  }
+}
+
+function dispatchSseFrame(frame: string, callbacks: StreamAnalysisCallbacks): void {
+  const eventLine = frame.split("\n").find((line) => line.startsWith("event: "));
+  const dataLine = frame.split("\n").find((line) => line.startsWith("data: "));
+  if (!eventLine || !dataLine) return;
+
+  const eventType = eventLine.slice("event: ".length);
+  const data = JSON.parse(dataLine.slice("data: ".length));
+
+  if (eventType === "weaknesses") {
+    callbacks.onWeaknesses(data as WeaknessesResponse);
+  } else if (eventType === "result") {
+    callbacks.onResult(data as AnalyzeResponse);
+  } else if (eventType === "error") {
+    callbacks.onError((data as { message: string }).message);
+  }
+}
