@@ -1,9 +1,9 @@
 import json
 import os
 
-from tools.counterargument import PHASE2_SYSTEM, build_phase2_user_prompt
-from tools.fact_extraction import EXTRACTION_SYSTEM, build_extraction_user_prompt
-from tools.weakness_analysis import PHASE1_SYSTEM, build_phase1_user_prompt
+from tools.prompts.counterargument import PHASE2_SYSTEM, build_phase2_user_prompt
+from tools.prompts.fact_extraction import EXTRACTION_SYSTEM, build_extraction_user_prompt
+from tools.prompts.weakness_analysis import PHASE1_SYSTEM, build_phase1_user_prompt
 
 
 def _call_openai(client, system: str, user: str) -> str:
