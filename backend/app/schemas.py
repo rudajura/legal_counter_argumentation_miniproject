@@ -15,6 +15,10 @@ class WeaknessesResponse(BaseModel):
     full_fact_pattern: str
 
 
+class ExtractFactPatternResponse(BaseModel):
+    fact_pattern: str
+
+
 class CounterargumentsRequest(BaseModel):
     weaknesses: list[Weakness]
     full_fact_pattern: str

@@ -1,9 +1,6 @@
-from app.prompts import (
-    PHASE1_SYSTEM,
-    PHASE2_SYSTEM,
-    build_phase1_user_prompt,
-    build_phase2_user_prompt,
-)
+from tools.counterargument import PHASE2_SYSTEM, build_phase2_user_prompt
+from tools.fact_extraction import EXTRACTION_SYSTEM, build_extraction_user_prompt
+from tools.weakness_analysis import PHASE1_SYSTEM, build_phase1_user_prompt
 
 
 def test_build_phase1_user_prompt_includes_inputs():
@@ -34,3 +31,12 @@ def test_phase1_system_requests_json_array():
 def test_phase2_system_requests_json_object_with_summary():
     assert "summary" in PHASE2_SYSTEM
     assert "items" in PHASE2_SYSTEM
+
+
+def test_build_extraction_user_prompt_includes_document_text():
+    prompt = build_extraction_user_prompt("the document contents")
+    assert "the document contents" in prompt
+
+
+def test_extraction_system_requests_facts_only():
+    assert "skutkov" in EXTRACTION_SYSTEM.lower()

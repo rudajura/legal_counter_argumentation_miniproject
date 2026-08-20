@@ -26,6 +26,25 @@ export async function analyzeWeaknesses(
   return response.json();
 }
 
+export async function extractFactPattern(files: File[]): Promise<string> {
+  const formData = new FormData();
+  for (const file of files) {
+    formData.append("files", file);
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/extract/fact-pattern`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Extrakce skutkového stavu se nezdařila (HTTP ${response.status})`);
+  }
+
+  const body: { fact_pattern: string } = await response.json();
+  return body.fact_pattern;
+}
+
 export async function generateCounterarguments(
   weaknesses: Weakness[],
   fullFactPattern: string,

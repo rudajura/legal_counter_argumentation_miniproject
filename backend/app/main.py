@@ -7,11 +7,16 @@ from openai import OpenAI
 
 load_dotenv()
 
-from app.openai_client import analyze_weaknesses, generate_counterarguments  # noqa: E402
+from app.openai_client import (  # noqa: E402
+    analyze_weaknesses,
+    extract_fact_pattern,
+    generate_counterarguments,
+)
 from app.pdf_extract import extract_text_from_pdf  # noqa: E402
 from app.schemas import (  # noqa: E402
     AnalyzeResponse,
     CounterargumentsRequest,
+    ExtractFactPatternResponse,
     WeaknessesResponse,
 )
 
@@ -51,6 +56,19 @@ async def analyze_weaknesses_endpoint(
     client = get_client()
     weaknesses = analyze_weaknesses(client, full_fact_pattern, argument)
     return {"weaknesses": weaknesses, "full_fact_pattern": full_fact_pattern}
+
+
+@app.post("/api/extract/fact-pattern", response_model=ExtractFactPatternResponse)
+async def extract_fact_pattern_endpoint(files: list[UploadFile] = File(...)):
+    extracted_texts = []
+    for uploaded_file in files:
+        content = await uploaded_file.read()
+        extracted_texts.append(extract_text_from_pdf(content))
+    document_text = "\n\n".join(extracted_texts)
+
+    client = get_client()
+    fact_pattern = extract_fact_pattern(client, document_text)
+    return {"fact_pattern": fact_pattern}
 
 
 @app.post("/api/analyze/counterarguments", response_model=AnalyzeResponse)

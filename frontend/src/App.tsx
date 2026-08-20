@@ -50,8 +50,7 @@ export default function App() {
             §
           </div>
           <div>
-            <p className="eyebrow">Právní analýza · zátěžový test</p>
-            <h1>Zátěžový test argumentu</h1>
+            <h1>Analýza protiargumentů</h1>
             <p className="subtitle">
               Otestujte svůj právní argument proti nejsilnějším
               protiargumentům, které by mohla vznést protistrana.

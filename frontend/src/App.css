@@ -68,9 +68,9 @@ h1 {
 .subtitle {
   font-size: 1.02rem;
   color: var(--ink-soft);
-  max-width: 46ch;
   line-height: 1.55;
   margin: 0;
+  white-space: nowrap;
 }
 
 /* Form card */
@@ -305,6 +305,46 @@ textarea:disabled {
 .file-chip-remove:disabled {
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+.extract-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin-top: 0.85rem;
+}
+
+.extract-button {
+  font-weight: 600;
+  font-size: 0.88rem;
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--case-blue);
+  background: var(--case-blue-soft);
+  color: var(--case-blue-dark);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.extract-button:hover:not(:disabled) {
+  background: var(--case-blue);
+  border-color: var(--case-blue);
+  color: white;
+}
+
+.extract-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.extract-error {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--seal-red);
 }
 
 /* Submit */

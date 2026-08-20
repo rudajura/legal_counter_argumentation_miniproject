@@ -6,6 +6,7 @@ import {
   type KeyboardEvent,
 } from "react";
 import { demoExamples } from "../data/demoExamples";
+import { extractFactPattern } from "../api/client";
 
 interface ArgumentFormProps {
   onSubmit: (factPattern: string, argument: string, files: File[]) => void;
@@ -17,6 +18,8 @@ export function ArgumentForm({ onSubmit, disabled }: ArgumentFormProps) {
   const [argument, setArgument] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [extractError, setExtractError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleSubmit(event: FormEvent) {
@@ -42,6 +45,22 @@ export function ArgumentForm({ onSubmit, disabled }: ArgumentFormProps) {
     setFiles((prev) => prev.filter((_, i) => i !== index));
   }
 
+  async function handleExtractFactPattern() {
+    if (files.length === 0 || disabled || isExtracting) return;
+    setIsExtracting(true);
+    setExtractError(null);
+    try {
+      const extracted = await extractFactPattern(files);
+      setFactPattern(extracted);
+    } catch (err) {
+      setExtractError(
+        err instanceof Error ? err.message : "Extrakce se nezdařila",
+      );
+    } finally {
+      setIsExtracting(false);
+    }
+  }
+
   function openFileDialog() {
     if (!disabled) fileInputRef.current?.click();
   }
@@ -63,7 +82,7 @@ export function ArgumentForm({ onSubmit, disabled }: ArgumentFormProps) {
   return (
     <form onSubmit={handleSubmit} className="argument-form">
       <div>
-        <p className="quick-start-label">Rychlý start</p>
+        <p className="quick-start-label">Demonstrační příklady</p>
         <div className="demo-buttons">
           {demoExamples.map((demo, index) => (
             <button
@@ -93,7 +112,7 @@ export function ArgumentForm({ onSubmit, disabled }: ArgumentFormProps) {
         </label>
 
         <label className="field">
-          <span className="field-heading">Můj argument / stanovisko</span>
+          <span className="field-heading">Můj argument</span>
           <textarea
             value={argument}
             onChange={(event) => setArgument(event.target.value)}
@@ -168,6 +187,22 @@ export function ArgumentForm({ onSubmit, disabled }: ArgumentFormProps) {
               </li>
             ))}
           </ul>
+        )}
+
+        {files.length > 0 && (
+          <div className="extract-row">
+            <button
+              type="button"
+              className="extract-button"
+              onClick={handleExtractFactPattern}
+              disabled={disabled || isExtracting}
+            >
+              {isExtracting
+                ? "Vytahuji skutkový stav…"
+                : "Vytáhnout skutkový stav z PDF"}
+            </button>
+            {extractError && <p className="extract-error">{extractError}</p>}
+          </div>
         )}
       </div>
 
