@@ -9,18 +9,19 @@ from app.prompts import (
 )
 
 
-def _call_claude(client, system: str, user: str) -> str:
-    model = os.environ.get("ANTHROPIC_MODEL", "claude-opus-5")
-    response = client.messages.create(
+def _call_openai(client, system: str, user: str) -> str:
+    model = os.environ.get("OPENAI_MODEL", "gpt-5.5")
+    effort = os.environ.get("OPENAI_REASONING_EFFORT", "high")
+    response = client.responses.create(
         model=model,
-        max_tokens=16000,
-        thinking={"type": "adaptive"},
-        output_config={"effort": "high"},
-        system=system,
-        messages=[{"role": "user", "content": user}],
+        max_output_tokens=16000,
+        reasoning={"effort": effort},
+        input=[
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
     )
-    text_blocks = [block.text for block in response.content if block.type == "text"]
-    return "".join(text_blocks)
+    return response.output_text
 
 
 def _extract_json(raw: str):
@@ -34,7 +35,7 @@ def _extract_json(raw: str):
 
 
 def analyze_weaknesses(client, fact_pattern: str, argument: str) -> list[dict]:
-    raw = _call_claude(
+    raw = _call_openai(
         client, PHASE1_SYSTEM, build_phase1_user_prompt(fact_pattern, argument)
     )
     return _extract_json(raw)
@@ -43,7 +44,7 @@ def analyze_weaknesses(client, fact_pattern: str, argument: str) -> list[dict]:
 def generate_counterarguments(
     client, weaknesses: list[dict], fact_pattern: str, argument: str
 ) -> dict:
-    raw = _call_claude(
+    raw = _call_openai(
         client,
         PHASE2_SYSTEM,
         build_phase2_user_prompt(weaknesses, fact_pattern, argument),

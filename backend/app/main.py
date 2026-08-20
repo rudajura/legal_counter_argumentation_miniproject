@@ -1,13 +1,13 @@
 import os
 
-from anthropic import Anthropic
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from openai import OpenAI
 
 load_dotenv()
 
-from app.anthropic_client import analyze_weaknesses, generate_counterarguments  # noqa: E402
+from app.openai_client import analyze_weaknesses, generate_counterarguments  # noqa: E402
 from app.pdf_extract import extract_text_from_pdf  # noqa: E402
 from app.schemas import AnalyzeResponse  # noqa: E402
 
@@ -25,8 +25,8 @@ def health():
     return {"status": "ok"}
 
 
-def get_client() -> Anthropic:
-    return Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+def get_client() -> OpenAI:
+    return OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 
 @app.post("/api/analyze", response_model=AnalyzeResponse)
