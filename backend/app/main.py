@@ -9,7 +9,11 @@ load_dotenv()
 
 from app.openai_client import analyze_weaknesses, generate_counterarguments  # noqa: E402
 from app.pdf_extract import extract_text_from_pdf  # noqa: E402
-from app.schemas import AnalyzeResponse  # noqa: E402
+from app.schemas import (  # noqa: E402
+    AnalyzeResponse,
+    CounterargumentsRequest,
+    WeaknessesResponse,
+)
 
 app = FastAPI()
 app.add_middleware(
@@ -29,8 +33,8 @@ def get_client() -> OpenAI:
     return OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 
-@app.post("/api/analyze", response_model=AnalyzeResponse)
-async def analyze(
+@app.post("/api/analyze/weaknesses", response_model=WeaknessesResponse)
+async def analyze_weaknesses_endpoint(
     fact_pattern: str = Form(...),
     argument: str = Form(...),
     files: list[UploadFile] = File(default=[]),
@@ -46,7 +50,14 @@ async def analyze(
 
     client = get_client()
     weaknesses = analyze_weaknesses(client, full_fact_pattern, argument)
+    return {"weaknesses": weaknesses, "full_fact_pattern": full_fact_pattern}
+
+
+@app.post("/api/analyze/counterarguments", response_model=AnalyzeResponse)
+async def generate_counterarguments_endpoint(body: CounterargumentsRequest):
+    client = get_client()
+    weaknesses = [w.model_dump() for w in body.weaknesses]
     result = generate_counterarguments(
-        client, weaknesses, full_fact_pattern, argument
+        client, weaknesses, body.full_fact_pattern, body.argument
     )
     return result
